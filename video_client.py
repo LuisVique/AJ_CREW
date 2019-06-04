@@ -9,6 +9,14 @@ class VideoClient(object):
 
 	ds_server = Ds_users()
 
+	DS_NICK = "rodri"
+	DS_PASS = "clave"
+	DS_IP = "127.0.0.0"
+	DS_PORT = 8080
+	DS_VERS = "V0"
+
+	FLAG_LOGIN = 0
+
 	def __init__(self, window_size):
 
 		# Creamos una variable que contenga el GUI principal
@@ -26,7 +34,7 @@ class VideoClient(object):
 		self.app.registerEvent(self.capturaVideo)
 
 		# Añadir los botones
-		self.app.addButtons(["Conectar", "Colgar", "Salir"], self.buttonsCallback)
+		self.app.addButtons(["Conectar", "Login", "Salir"], self.buttonsCallback)
 
 		# Barra de estado
 		# Debe actualizarse con información útil sobre la llamada (duración, FPS, etc...)
@@ -34,12 +42,25 @@ class VideoClient(object):
 
 		self.app.startSubWindow("users", modal= True)
 		self.app.startScrollPane("PANE")
+		self.app.addLabel("1", "Selecciona al usuario que desea llamar:")
 		list_users = self.ds_server.ds_listUsers()[1:]
 		for user in list_users:
 			self.app.addButton(user.split()[0], self.callButtons)
 		self.app.stopScrollPane()
 		self.app.addButton("Introducir usuario", self.callButtons)
 		self.app.stopSubWindow()
+
+
+		self.app.startSubWindow("login", modal = True)
+		self.app.addLabel("labelNick", "Nick :")
+		self.app.addEntry("Nick")
+		self.app.addLabel("labelPass","Password :")
+		self.app.addSecretEntry("Pass")
+		self.app.setEntryDefault("Nick", self.DS_NICK)
+		self.app.setEntryDefault("Pass", self.DS_PASS)
+		self.app.addButton("Sign in", self.buttonsCallback)
+		self.app.stopSubWindow()
+
 
 	def start(self):
 		self.app.go()
@@ -82,17 +103,47 @@ class VideoClient(object):
 			self.app.stop()
 		elif button == "Conectar":
 			self.app.showSubWindow("users")
-			# Entrada del nick del usuario a conectar
+		elif button == "Login":
+			self.app.showSubWindow("login")
+		elif button == "Sign in":
+			t_aux = "Actualizado"
+			if self.FLAG_LOGIN == 0:
+				t_aux = "Registrado"
+				self.app.setButton("Login", "Cambiar de usuario")
+
+			if self.app.getEntry("Nick") == '' and self.app.getEntry("Pass") == '':
+				if self.ds_server.ds_register( self.DS_NICK + ' ' + self.DS_IP + ' ' + str(self.DS_PORT) + ' ' + self.DS_PASS + ' ' + self.DS_VERS ):
+					self.app.infoBox("Info", t_aux + " con el usuario: " + self.DS_NICK , parent = "login")
+				else:
+					self.app.errorBox("Info", "Ha ocurrido un problema durante el registro, por favor, intenteló de nuevo", parent = "login")
+			else:
+
+				user = self.app.getEntry("Nick")
+				passw = self.app.getEntry("Pass")
+
+				if self.ds_server.ds_register( self.DS_NICK + ' ' + self.DS_IP + ' ' + str(self.DS_PORT) + ' ' + self.DS_PASS + ' ' + self.DS_VERS ):
+
+					self.DS_NICK = user
+					self.DS_PASS = passw
+
+					self.app.infoBox("Info", t_aux + " con el usuario: " + self.DS_NICK, parent = "login")
+				else:
+					self.app.errorBox("Info", "Ha ocurrido un problema durante el registro, por favor, intenteló de nuevo", parent = "login")
+
+			self.app.setStatusbar("User: " + self.DS_NICK, 0)
+			self.app.hideSubWindow("login")
+			self.FLAG_LOGIN = 1
 
 
 	def callButtons(self, button):
 		nick = button
+
 		if button == "Introducir usario":
 			nick = self.app.textBox("Conexión",
 			"Introduce el nick del usuario a buscar")
-		self.app.infoBox("Call", "Llamando a " + button, parent= 'users')
+
 		#TODO LO DE LLAMADA
-		return
+		self.app.hideSubWindow("users")
 
 if __name__ == '__main__':
 

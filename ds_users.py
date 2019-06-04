@@ -7,7 +7,7 @@ class Ds_users(object):
 
     def ds_register(self, message):
 
-        ret = self.ds_server.ds_connect("REGISTER" + message)
+        ret = self.ds_server.ds_connect("REGISTER " + message)
         if ret.split()[0] is "NOK":
             return None
 
@@ -28,6 +28,7 @@ class Ds_users(object):
             return None
 
         userList = sorted(ret[16:].split('#'))
+
         return userList
 
     def ds_quit(self):

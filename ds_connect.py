@@ -15,6 +15,7 @@ class Ds_connect(object):
         try:
             s.send(message.encode('utf-8'))
             ret = s.recv(1024).decode('utf-8')
+            #FALTA IMPLEMENTAR LECTURA DE TODA LA LISTA
         except:
             s.close()
             return None
