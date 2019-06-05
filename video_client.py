@@ -2,8 +2,11 @@
 from appJar import gui
 from PIL import Image, ImageTk
 from ds_users import Ds_users
+from control_server import Control_server
+import threading
 import numpy as np
 import cv2
+
 
 class VideoClient(object):
 
@@ -16,6 +19,8 @@ class VideoClient(object):
 	DS_VERS = "V0"
 
 	FLAG_LOGIN = 0
+
+	CALL_USER = ''
 
 	def __init__(self, window_size):
 
@@ -59,6 +64,11 @@ class VideoClient(object):
 		self.app.setEntryDefault("Nick", self.DS_NICK)
 		self.app.setEntryDefault("Pass", self.DS_PASS)
 		self.app.addButton("Sign in", self.buttonsCallback)
+		self.app.stopSubWindow()
+
+		self.app.startSubWindow("user_busq", modal = True)
+		self.app.addLabel("busqEx", "Búsqueda realizada con éxito ")
+		self.app.addHorizontalSeparator(colour="black")
 		self.app.stopSubWindow()
 
 
@@ -128,7 +138,7 @@ class VideoClient(object):
 
 					self.app.infoBox("Info", t_aux + " con el usuario: " + self.DS_NICK, parent = "login")
 				else:
-					self.app.errorBox("Info", "Ha ocurrido un problema durante el registro, por favor, intenteló de nuevo", parent = "login")
+					self.app.errorBox("Info2", "Ha ocurrido un problema durante el registro, por favor, intenteló de nuevo", parent = "login")
 
 			self.app.setStatusbar("User: " + self.DS_NICK, 0)
 			self.app.hideSubWindow("login")
@@ -136,11 +146,24 @@ class VideoClient(object):
 
 
 	def callButtons(self, button):
-		nick = button
-
-		if button == "Introducir usario":
-			nick = self.app.textBox("Conexión",
+		self.USER_CALL = button
+		if button == "Introducir usuario":
+			self.USER_CALL = self.app.textBox("Conexión",
 			"Introduce el nick del usuario a buscar")
+			if self.USER_CALL:
+				ret = self.ds_server.ds_query(self.USER_CALL)
+				if ret:
+					self.app.openSubWindow("user_busq")
+					self.app.addLabel("user", "Usuario: " + self.USER_CALL)
+					self.app.addButtons(["Llamar", "Cancelar"], self.callButtons)
+					self.app.stopSubWindow()
+					self.app.showSubWindow("user_busq")
+					return
+				else:
+					self.app.errorBox("no_user", "El usuario introducido no se encuentra en el servidor")
+		elif button == "Cancelar":
+			self.app.hideSubWindow("user_busq")
+			return
 
 		#TODO LO DE LLAMADA
 		self.app.hideSubWindow("users")
@@ -149,6 +172,8 @@ if __name__ == '__main__':
 
 	vc = VideoClient("640x520")
 
+	cServer= threading.Thread(target = Control_server().server_controler , args=())
+	cServer.start()
 	# Crear aquí los threads de lectura, de recepción y,
 	# en general, todo el código de inicialización que sea necesario
 	# ...

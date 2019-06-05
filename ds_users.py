@@ -8,15 +8,16 @@ class Ds_users(object):
     def ds_register(self, message):
 
         ret = self.ds_server.ds_connect("REGISTER " + message)
-        if ret.split()[0] is "NOK":
+        if ret.split()[0] == 'NOK':
             return None
 
         return ret
 
-    def ds_query(self):
+    def ds_query(self, message):
 
-        ret = self.ds_server.ds_connect("QUERY" + message)
-        if ret.split()[0] is "NOK":
+        ret = self.ds_server.ds_connect("QUERY " + message)
+
+        if ret.split()[0] == 'NOK':
             return None
 
         return ret
@@ -24,7 +25,7 @@ class Ds_users(object):
     def ds_listUsers(self):
 
         ret = self.ds_server.ds_connect("LIST_USERS")
-        if ret.split()[0] is "NOK":
+        if ret.split()[0] == 'NOK':
             return None
 
         userList = sorted(ret[16:].split('#'))
@@ -34,7 +35,7 @@ class Ds_users(object):
     def ds_quit(self):
 
         ret = self.ds_server.ds_connect("QUIT")
-        if ret.split()[0] is "NOK":
+        if ret.split()[0] == 'NOK':
             return None
 
         return ret
