@@ -6,7 +6,9 @@ from user_data import User_data
 import threading
 import numpy as np
 import cv2
-
+import socket
+import sys
+import time
 
 class VideoClient(object):
 
@@ -15,8 +17,6 @@ class VideoClient(object):
 	# DS_VERS = "V0"
 
 	FLAG_LOGIN = 0
-
-	CALL_USER = ''
 
 	def __init__(self, window_size, u_data):
 
@@ -33,9 +33,9 @@ class VideoClient(object):
 
 		# Registramos la función de captura de video
 		# Esta misma función también sirve para enviar un vídeo
-		self.cap = cv2.VideoCapture(0)
-		self.app.setPollTime(20)
-		self.app.registerEvent(self.capturaVideo)
+		#self.cap = cv2.VideoCapture(0)
+		# self.app.setPollTime(20)
+		# self.app.registerEvent(self.capturaVideo)
 
 		# Añadir los botones
 		self.app.addButtons(["Conectar", "Login", "Salir"], self.buttonsCallback)
@@ -70,8 +70,66 @@ class VideoClient(object):
 		self.app.addHorizontalSeparator(colour="black")
 		self.app.stopSubWindow()
 
+		# self.app.startSubWindow("calling", modal = True)
+		# self.app.addLabel("info3", "Conexión exitosa: \n")
+		# self.app.stopSubWindow()
+
 	def start(self):
 		self.app.go()
+
+
+	def incoming_call(self, user):
+		ret = self.app.questionBox("Llamada", user + ' ' + 'te está llamando' + '\n' + '¿ Quieres aceptar la llamada ?')
+
+		return ret
+
+	def end_call(self):
+		self.app.infoBox("end", "El usuario ha colgado la llamada ")
+
+	def hold_call(self):
+		self.app.infoBox("hold", "El usuario ha pausado la llamada")
+
+	def c_user_available(self, user):
+
+		self.u_data.DST_UDP = user.split()[2]
+		# self.app.openSubWindow("calling")
+		# self.app.addLabel("callingT", "Llamando a:" + user.split()[1])
+		# self.app.stopSubWindow()
+		# self.app.showSubWindow("calling")
+		# time.sleep(5)
+		self.u_data.IN_CALL = 1
+		#ACTIVANDO EL FLAG COMIENZA LA LLAMADA
+
+	def c_user_cancel(self, user):
+		self.app.errorBox("err1","El usuario " + user.split()[1] + " ha rechazado la llamada")
+
+	def c_user_busy(self, user):
+		self.app.errorBox("err2", "El usuario " + user.split()[1] + " está ocupado")
+
+	def start_call(self, user):
+
+		C_USER_STATUS = {"CALL_ACCEPTED": self.c_user_available, "CALL_DENIED": self.c_user_cancel, "CALL_BUSY": self.c_user_busy}
+		msg, msg2, nick, ip, port, proto = self.ds_server.ds_query(user).split()
+
+		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+		# Conecta el socket en el puerto cuando el servidor esté escuchando
+		server_address = (ip, int(port))
+		sock.connect(server_address)
+
+		try:
+			sock.sendall(("CALLING " + self.u_data.US_NICK + ' ' + str(self.u_data.UDP_PORT)).encode('utf-8'))
+			ret = sock.recv(1024).decode('utf-8')
+			self.u_data.DST_IP = ip
+			self.DST_TCP = port
+			status = ret.split()[0]
+
+			func = C_USER_STATUS.get(status, lambda: "Invalid status")
+			if func != "Invalid status":
+				func(ret)
+
+		finally:
+		    sock.close()
 
 	# Función que captura el frame a mostrar en cada momento
 	def capturaVideo(self):
@@ -163,7 +221,7 @@ class VideoClient(object):
 			self.app.hideSubWindow("user_busq")
 			return
 
-		#TODO LO DE LLAMADA
+		self.start_call(button)
 		self.app.hideSubWindow("users")
 
 if __name__ == '__main__':
@@ -171,7 +229,14 @@ if __name__ == '__main__':
 	u_data = User_data()
 	vc = VideoClient("640x520", u_data)
 
+	from call_system import Call_system;
+
+	cSystem= threading.Thread(target = Call_system(u_data, vc).start_video_call , args=())
+	cSystem.setDaemon(True)
+	cSystem.start()
+
 	from control_server import Control_server;
+
 	cServer= threading.Thread(target = Control_server(u_data, vc).server_controler , args=())
 	cServer.setDaemon(True)
 	cServer.start()
