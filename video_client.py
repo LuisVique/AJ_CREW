@@ -33,9 +33,9 @@ class VideoClient(object):
 
 		# Registramos la función de captura de video
 		# Esta misma función también sirve para enviar un vídeo
-		#self.cap = cv2.VideoCapture(0)
-		# self.app.setPollTime(20)
-		# self.app.registerEvent(self.capturaVideo)
+		self.cap = cv2.VideoCapture(0)
+		self.app.setPollTime(20)
+		self.app.registerEvent(self.capturaVideo)
 
 		# Añadir los botones
 		self.app.addButtons(["Conectar", "Login", "Salir"], self.buttonsCallback)
@@ -121,7 +121,7 @@ class VideoClient(object):
 			sock.sendall(("CALLING " + self.u_data.US_NICK + ' ' + str(self.u_data.UDP_PORT)).encode('utf-8'))
 			ret = sock.recv(1024).decode('utf-8')
 			self.u_data.DST_IP = ip
-			self.DST_TCP = port
+			self.u_data.DST_TCP = port
 			status = ret.split()[0]
 
 			func = C_USER_STATUS.get(status, lambda: "Invalid status")
@@ -146,7 +146,29 @@ class VideoClient(object):
 		# Aquí tendría que el código que envia el frame a la red
 		# ...
 
+
+	def video_compression(self):
+
+		ret, img = self.cap.read() # lectura de un frame de vídeo
+
+        # Compresión JPG al 50% de resolución (se puede variar)
+        encode_param = [cv2.IMWRITE_JPEG_QUALITY,50]
+        result,encimg = cv2.imencode('.jpg',img,encode_param)
+        if result == False: print('Error al codificar imagen')
+        encimg = encimg.tobytes()
+
+		self.app.setImageData("video", img_tk, fmt = 'PhotoImage')#ANTES DE ENVIAR LO MUESTRA, CMABIAR PARA QUE SE VEA EN ELA PEQUEÑA
+
+		return encimg
+
+	def video_decompression(self, c_video):
+
+		cv2_im = cv2.cvtColor(decimg,cv2.COLOR_BGR2RGB)
+		img_tk = ImageTk.PhotoImage(Image.fromarray(cv2_im))
+
+		self.app.setImageData("video", img_tk, fmt = 'PhotoImage')#CAMBIAR PARA QUE SE VEA JUNTO CON LA OTRA EN LA GRANDE
 	# Establece la resolución de la imagen capturada
+	
 	def setImageResolution(self, resolution):
 		# Se establece la resolución de captura de la webcam
 		# Puede añadirse algún valor superior si la cámara lo permite

@@ -68,6 +68,7 @@ class Control_server(object):
 
     def c_end(self, connection):
         self.u_data.IN_CALL = 0
+        self.BUSSY_FLAG = 0
         self.gui.end_call()
 
 
