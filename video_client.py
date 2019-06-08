@@ -2,7 +2,7 @@
 from appJar import gui
 from PIL import Image, ImageTk
 from ds_users import Ds_users
-from control_server import Control_server
+from user_data import User_data
 import threading
 import numpy as np
 import cv2
@@ -10,20 +10,19 @@ import cv2
 
 class VideoClient(object):
 
-	ds_server = Ds_users()
-
-	DS_NICK = "rodri"
-	DS_PASS = "clave"
-	DS_IP = "127.0.0.0"
-	DS_PORT = 8080
-	DS_VERS = "V0"
+	# DS_NICK = "rodri"
+	# DS_PASS = "clave"
+	# DS_VERS = "V0"
 
 	FLAG_LOGIN = 0
 
 	CALL_USER = ''
 
-	def __init__(self, window_size):
+	def __init__(self, window_size, u_data):
 
+
+		self.ds_server = Ds_users(u_data)
+		self.u_data = u_data
 		# Creamos una variable que contenga el GUI principal
 		self.app = gui("Redes2 - P2P", window_size)
 		self.app.setGuiPadding(10,10)
@@ -61,8 +60,8 @@ class VideoClient(object):
 		self.app.addEntry("Nick")
 		self.app.addLabel("labelPass","Password :")
 		self.app.addSecretEntry("Pass")
-		self.app.setEntryDefault("Nick", self.DS_NICK)
-		self.app.setEntryDefault("Pass", self.DS_PASS)
+		self.app.setEntryDefault("Nick", self.u_data.US_NICK)
+		self.app.setEntryDefault("Pass", self.u_data.US_PASS)
 		self.app.addButton("Sign in", self.buttonsCallback)
 		self.app.stopSubWindow()
 
@@ -70,7 +69,6 @@ class VideoClient(object):
 		self.app.addLabel("busqEx", "Búsqueda realizada con éxito ")
 		self.app.addHorizontalSeparator(colour="black")
 		self.app.stopSubWindow()
-
 
 	def start(self):
 		self.app.go()
@@ -122,8 +120,8 @@ class VideoClient(object):
 				self.app.setButton("Login", "Cambiar de usuario")
 
 			if self.app.getEntry("Nick") == '' and self.app.getEntry("Pass") == '':
-				if self.ds_server.ds_register( self.DS_NICK + ' ' + self.DS_IP + ' ' + str(self.DS_PORT) + ' ' + self.DS_PASS + ' ' + self.DS_VERS ):
-					self.app.infoBox("Info", t_aux + " con el usuario: " + self.DS_NICK , parent = "login")
+				if self.ds_server.ds_register( self.u_data.US_NICK + ' ' + self.u_data.US_IP + ' ' + str(self.u_data.TCP_CONTROL_PORT) + ' ' + self.u_data.US_PASS + ' ' + self.u_data.US_PROTO ):
+					self.app.infoBox("Info", t_aux + " con el usuario: " + self.u_data.US_NICK , parent = "login")
 				else:
 					self.app.errorBox("Info", "Ha ocurrido un problema durante el registro, por favor, intenteló de nuevo", parent = "login")
 			else:
@@ -131,16 +129,16 @@ class VideoClient(object):
 				user = self.app.getEntry("Nick")
 				passw = self.app.getEntry("Pass")
 
-				if self.ds_server.ds_register( self.DS_NICK + ' ' + self.DS_IP + ' ' + str(self.DS_PORT) + ' ' + self.DS_PASS + ' ' + self.DS_VERS ):
+				if self.ds_server.ds_register( self.u_data.US_NICK + ' ' + self.u_data.US_IP + ' ' + str(self.u_data.TCP_CONTROL_PORT) + ' ' + self.u_data.US_PASS + ' ' + self.u_data.US_PROTO ):
 
-					self.DS_NICK = user
-					self.DS_PASS = passw
+					self.u_data.US_NICK = user
+					self.u_data.US_PASS = passw
 
-					self.app.infoBox("Info", t_aux + " con el usuario: " + self.DS_NICK, parent = "login")
+					self.app.infoBox("Info", t_aux + " con el usuario: " + self.u_data.US_NICK, parent = "login")
 				else:
 					self.app.errorBox("Info2", "Ha ocurrido un problema durante el registro, por favor, intenteló de nuevo", parent = "login")
 
-			self.app.setStatusbar("User: " + self.DS_NICK, 0)
+			self.app.setStatusbar("User: " + self.u_data.US_NICK, 0)
 			self.app.hideSubWindow("login")
 			self.FLAG_LOGIN = 1
 
@@ -170,9 +168,12 @@ class VideoClient(object):
 
 if __name__ == '__main__':
 
-	vc = VideoClient("640x520")
+	u_data = User_data()
+	vc = VideoClient("640x520", u_data)
 
-	cServer= threading.Thread(target = Control_server().server_controler , args=())
+	from control_server import Control_server;
+	cServer= threading.Thread(target = Control_server(u_data, vc).server_controler , args=())
+	cServer.setDaemon(True)
 	cServer.start()
 	# Crear aquí los threads de lectura, de recepción y,
 	# en general, todo el código de inicialización que sea necesario

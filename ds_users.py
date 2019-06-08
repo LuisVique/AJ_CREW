@@ -3,7 +3,9 @@ from ds_connect import Ds_connect
 
 class Ds_users(object):
 
-    ds_server = Ds_connect()
+    def __init__(self, u_data):
+        self.u_data = u_data
+        self.ds_server = Ds_connect(u_data)
 
     def ds_register(self, message):
 
