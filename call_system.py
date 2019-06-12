@@ -35,23 +35,33 @@ class Call_system(object):
 
 
     def udp_video_rcv(self):
-
+        #return
         sock = socket.socket(socket.AF_INET, # Internet
                             socket.SOCK_DGRAM) # UDP
-        sock.bind((self.u_data.DST_IP,  int(self.u_data.DST_UDP)))
+        sock.bind((self.u_data.US_IP,  int(self.u_data.UDP_PORT)))
 
-        while True:
-            data, addr = sock.recvfrom(1024) # buffer size is 1024 bytes
+        video_rep = threading.Thread(target = self.gui.video_repro , args=())
+        video_rep.setDaemon(True)
+        video_rep.start()
+
+        while self.u_data.IN_CALL == 1:
+            data = sock.recvmsg(65536) # buffer size is 1024 bytes
+            #PILLAR SOLO EL VIDEO
+            self.gui.vid_buffer.append(self.gui.video_decompression(data[0]))
             # Conversión de formato para su uso en el GUI
-            self.gui.video_decompression(data)
+        sock.close()
 
     def udp_video_snd(self):
 
+        # return
         sock = socket.socket(socket.AF_INET, # Internet
                               socket.SOCK_DGRAM) # UDP
+        sock.connect((self.u_data.DST_IP, int(self.u_data.DST_UDP)))
 
-        encimg = self.gui.video_compression()
+        while self.u_data.IN_CALL == 1:
 
-        sock.sendto(encimg, (self.u_data.DST_IP, int(self.u_data.DST_UDP)))
-        # Los datos "encimg" ya están listos para su envío por la red
-        #enviar(encimg)
+            encimg = self.gui.video_compression()
+
+            sock.send(encimg)
+
+        sock.close()

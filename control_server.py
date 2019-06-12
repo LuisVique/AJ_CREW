@@ -37,6 +37,7 @@ class Control_server(object):
                     self.u_data.DST_IP = ip_c
                     self.u_data.DST_TCP = self.u_data.DST_UDP
                     func = self.CONTROL_COMMANDS.get(command, lambda: "Invalid command")
+
                     if func == "Invalid command":
                         break
                     func(self, conn)

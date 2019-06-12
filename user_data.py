@@ -11,8 +11,8 @@ class User_data(object):
 
     US_IP = '127.0.0.1'
 
-    TCP_CONTROL_PORT = 8002
-    UDP_PORT = 8002
+    TCP_CONTROL_PORT = 8003
+    UDP_PORT = 8003
 
     DST_TCP = ''
     DST_UDP = ''

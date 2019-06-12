@@ -9,6 +9,7 @@ import cv2
 import socket
 import sys
 import time
+import collections
 
 class VideoClient(object):
 
@@ -23,6 +24,8 @@ class VideoClient(object):
 
 		self.ds_server = Ds_users(u_data)
 		self.u_data = u_data
+
+		self.vid_buffer = collections.deque(maxlen = None)
 		# Creamos una variable que contenga el GUI principal
 		self.app = gui("Redes2 - P2P", window_size)
 		self.app.setGuiPadding(10,10)
@@ -34,8 +37,8 @@ class VideoClient(object):
 		# Registramos la función de captura de video
 		# Esta misma función también sirve para enviar un vídeo
 		self.cap = cv2.VideoCapture(0)
-		self.app.setPollTime(20)
-		self.app.registerEvent(self.capturaVideo)
+		# self.app.setPollTime(20)
+		# self.app.registerEvent(self.capturaVideo)
 
 		# Añadir los botones
 		self.app.addButtons(["Conectar", "Login", "Salir"], self.buttonsCallback)
@@ -90,7 +93,6 @@ class VideoClient(object):
 		self.app.infoBox("hold", "El usuario ha pausado la llamada")
 
 	def c_user_available(self, user):
-
 		self.u_data.DST_UDP = user.split()[2]
 		# self.app.openSubWindow("calling")
 		# self.app.addLabel("callingT", "Llamando a:" + user.split()[1])
@@ -131,44 +133,59 @@ class VideoClient(object):
 		finally:
 		    sock.close()
 
+
 	# Función que captura el frame a mostrar en cada momento
 	def capturaVideo(self):
 
 		# Capturamos un frame de la cámara o del vídeo
 		ret, frame = self.cap.read()
 		frame = cv2.resize(frame, (640,480))
-		cv2_im = cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
-		img_tk = ImageTk.PhotoImage(Image.fromarray(cv2_im))
 
-		# Lo mostramos en el GUI
-		self.app.setImageData("video", img_tk, fmt = 'PhotoImage')
-
-		# Aquí tendría que el código que envia el frame a la red
-		# ...
-
+		return frame
 
 	def video_compression(self):
 
 		ret, img = self.cap.read() # lectura de un frame de vídeo
 
-        # Compresión JPG al 50% de resolución (se puede variar)
-        encode_param = [cv2.IMWRITE_JPEG_QUALITY,50]
-        result,encimg = cv2.imencode('.jpg',img,encode_param)
-        if result == False: print('Error al codificar imagen')
-        encimg = encimg.tobytes()
-
-		self.app.setImageData("video", img_tk, fmt = 'PhotoImage')#ANTES DE ENVIAR LO MUESTRA, CMABIAR PARA QUE SE VEA EN ELA PEQUEÑA
+		# Compresión JPG al 50% de resolución (se puede variar)
+		encode_param = [cv2.IMWRITE_JPEG_QUALITY,50]
+		result,encimg = cv2.imencode('.jpg',img,encode_param)
+		if result == False: print('Error al codificar imagen')
+		encimg = encimg.tobytes()
 
 		return encimg
 
 	def video_decompression(self, c_video):
 
-		cv2_im = cv2.cvtColor(decimg,cv2.COLOR_BGR2RGB)
-		img_tk = ImageTk.PhotoImage(Image.fromarray(cv2_im))
+		decimg = cv2.imdecode(np.frombuffer(c_video,np.uint8), 1)
 
-		self.app.setImageData("video", img_tk, fmt = 'PhotoImage')#CAMBIAR PARA QUE SE VEA JUNTO CON LA OTRA EN LA GRANDE
+		return decimg
+
 	# Establece la resolución de la imagen capturada
-	
+
+
+	def video_repro(self):
+
+		while self.u_data.IN_CALL == 1:
+			if len(self.vid_buffer) > 20:
+					if len(self.vid_buffer) > 1:
+						try:
+							frame_gran = self.capturaVideo()
+							rcv_video = self.vid_buffer.popleft()
+
+							frame_peque = cv2.resize(rcv_video, (320,240)) # ajustar tamaño de la imagen pequeña
+
+							frame_compuesto = frame_gran
+
+							frame_compuesto[0:frame_peque.shape[0], 0:frame_peque.shape[1]] = frame_peque
+
+							cv2_im = cv2.cvtColor(frame_compuesto,cv2.COLOR_BGR2RGB)
+							img_tk = ImageTk.PhotoImage(Image.fromarray(cv2_im))
+
+							self.app.setImageData("video", img_tk, fmt = 'PhotoImage')
+						except:
+							print("ERROR IN VIDEO BUFFER")
+
 	def setImageResolution(self, resolution):
 		# Se establece la resolución de captura de la webcam
 		# Puede añadirse algún valor superior si la cámara lo permite
