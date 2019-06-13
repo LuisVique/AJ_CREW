@@ -45,23 +45,30 @@ class Call_system(object):
         video_rep.start()
 
         while self.u_data.IN_CALL == 1:
-            data = sock.recvmsg(65536) # buffer size is 1024 bytes
-            #PILLAR SOLO EL VIDEO
-            self.gui.vid_buffer.append(self.gui.video_decompression(data[0]))
+            vid = sock.recvmsg(65536) # buffer size is 1024 bytes
+
+            package = vid[0].split(b'#', 4)
+
+            self.gui.vid_buffer.append(self.gui.video_decompression(package))
             # Conversión de formato para su uso en el GUI
         sock.close()
 
     def udp_video_snd(self):
 
-        # return
+        count = 0
         sock = socket.socket(socket.AF_INET, # Internet
                               socket.SOCK_DGRAM) # UDP
         sock.connect((self.u_data.DST_IP, int(self.u_data.DST_UDP)))
 
         while self.u_data.IN_CALL == 1:
 
-            encimg = self.gui.video_compression()
-
+            ret = self.gui.video_compression()
+            fps = int((1 / ret[1]))
+            resolut = self.gui.resolution
+            time_stm = time.time()
+            pre = str(count) + '#' + str(time_stm) + '#' + resolut + '#' + str(fps) + '#'
+            encimg =  pre.encode('utf-8')+ ret[0]
             sock.send(encimg)
+            count += 1
 
         sock.close()

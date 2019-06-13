@@ -36,7 +36,7 @@ class VideoClient(object):
 
 		# Registramos la función de captura de video
 		# Esta misma función también sirve para enviar un vídeo
-		self.cap = cv2.VideoCapture(0)
+		# self.cap = cv2.VideoCapture(0)
 		# self.app.setPollTime(20)
 		# self.app.registerEvent(self.capturaVideo)
 
@@ -157,7 +157,9 @@ class VideoClient(object):
 
 	def video_decompression(self, c_video):
 
-		decimg = cv2.imdecode(np.frombuffer(c_video,np.uint8), 1)
+		decimg = cv2.imdecode(np.frombuffer(c_video[4], np.uint8), 1)
+
+		self.app.setStatusbar("FPS: " + c_video[3].decode('utf-8'), 1)
 
 		return decimg
 
@@ -169,17 +171,16 @@ class VideoClient(object):
 		while self.u_data.IN_CALL == 1:
 			if len(self.vid_buffer) > 20:
 					if len(self.vid_buffer) > 1:
-						try:
-							frame_gran = self.capturaVideo()
+						try:#frame_gran = self.capturaVideo()
 							rcv_video = self.vid_buffer.popleft()
 
 							frame_peque = cv2.resize(rcv_video, (320,240)) # ajustar tamaño de la imagen pequeña
 
-							frame_compuesto = frame_gran
+							#frame_compuesto = frame_gran
 
-							frame_compuesto[0:frame_peque.shape[0], 0:frame_peque.shape[1]] = frame_peque
+							#frame_compuesto[0:frame_peque.shape[0], 0:frame_peque.shape[1]] = frame_peque
 
-							cv2_im = cv2.cvtColor(frame_compuesto,cv2.COLOR_BGR2RGB)
+							cv2_im = cv2.cvtColor(frame_peque,cv2.COLOR_BGR2RGB)
 							img_tk = ImageTk.PhotoImage(Image.fromarray(cv2_im))
 
 							self.app.setImageData("video", img_tk, fmt = 'PhotoImage')
