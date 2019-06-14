@@ -15,11 +15,6 @@ class Call_system(object):
             if self.u_data.IN_CALL == 1:
                 break
 
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # Conecta el socket en el puerto cuando el servidor esté escuchando
-        server_address = (self.u_data.DST_IP, int(self.u_data.DST_TCP))
-        sock.connect(server_address)
-
         #self.gui.app.hideSubWindow("calling")
 
         #hilo de video entrante
@@ -55,20 +50,32 @@ class Call_system(object):
 
     def udp_video_snd(self):
 
+        sock2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # Conecta el socket en el puerto cuando el servidor esté escuchando
+        server_address = (self.u_data.DST_IP, int(self.u_data.DST_TCP))
+        sock2.connect(server_address)
+
         count = 0
         sock = socket.socket(socket.AF_INET, # Internet
                               socket.SOCK_DGRAM) # UDP
         sock.connect((self.u_data.DST_IP, int(self.u_data.DST_UDP)))
 
         while self.u_data.IN_CALL == 1:
+            if self.u_data.HOLD_CALL == 0:
+                ret = self.gui.video_compression()
+                fps = int((1 / ret[1]))
+                resolut = self.gui.resolution
+                time_stm = time.time()
+                pre = str(count) + '#' + str(time_stm) + '#' + resolut + '#' + str(fps) + '#'
+                encimg =  pre.encode('utf-8')+ ret[0]
+                sock.send(encimg)
+                count += 1
+            else:
+                sock2.sendall(("CALL_HOLD").encode("utf-8"))
+                while 1:
+                    if self.u_data.HOLD_CALL == 0:
+                        sock2.sendall(("CALL_RESUME").encode("utf-8"))
+                        break
 
-            ret = self.gui.video_compression()
-            fps = int((1 / ret[1]))
-            resolut = self.gui.resolution
-            time_stm = time.time()
-            pre = str(count) + '#' + str(time_stm) + '#' + resolut + '#' + str(fps) + '#'
-            encimg =  pre.encode('utf-8')+ ret[0]
-            sock.send(encimg)
-            count += 1
 
         sock.close()

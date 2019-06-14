@@ -25,6 +25,7 @@ class VideoClient(object):
 		self.ds_server = Ds_users(u_data)
 		self.u_data = u_data
 
+		self.resolution = window_size
 		self.vid_buffer = collections.deque(maxlen = None)
 		# Creamos una variable que contenga el GUI principal
 		self.app = gui("Redes2 - P2P", window_size)
@@ -42,6 +43,7 @@ class VideoClient(object):
 
 		# Añadir los botones
 		self.app.addButtons(["Conectar", "Login", "Salir"], self.buttonsCallback)
+		self.app.addButtons(["Colgar", "Pausar"], self.buttonsCallback)
 
 		# Barra de estado
 		# Debe actualizarse con información útil sobre la llamada (duración, FPS, etc...)
@@ -145,15 +147,19 @@ class VideoClient(object):
 
 	def video_compression(self):
 
+		start = time.time()
 		ret, img = self.cap.read() # lectura de un frame de vídeo
-
+		end = time.time()
+		seconds = end - start
 		# Compresión JPG al 50% de resolución (se puede variar)
 		encode_param = [cv2.IMWRITE_JPEG_QUALITY,50]
 		result,encimg = cv2.imencode('.jpg',img,encode_param)
 		if result == False: print('Error al codificar imagen')
 		encimg = encimg.tobytes()
 
-		return encimg
+		ret = [encimg, seconds]
+
+		return ret
 
 	def video_decompression(self, c_video):
 
@@ -211,6 +217,15 @@ class VideoClient(object):
 			self.app.showSubWindow("users")
 		elif button == "Login":
 			self.app.showSubWindow("login")
+		elif button == "Colgar":
+			self.u_data.IN_CALL = 0
+		elif button == "Pausar":
+			if self.u_data.HOLD_CALL == 1:
+				self.u_data.HOLD_CALL = 0
+				self.app.setButton("Pausar", "Pausar")
+			elif self.u_data.HOLD_CALL == 0:
+				self.u_data.HOLD_CALL = 1
+				self.app.setButton("Pausar", "Reanudar")
 		elif button == "Sign in":
 			t_aux = "Actualizado"
 			if self.FLAG_LOGIN == 0:
@@ -267,7 +282,7 @@ class VideoClient(object):
 if __name__ == '__main__':
 
 	u_data = User_data()
-	vc = VideoClient("640x520", u_data)
+	vc = VideoClient("720x590", u_data)
 
 	from call_system import Call_system;
 
