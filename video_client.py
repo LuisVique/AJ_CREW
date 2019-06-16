@@ -37,7 +37,7 @@ class VideoClient(object):
 
 		# Registramos la función de captura de video
 		# Esta misma función también sirve para enviar un vídeo
-		# self.cap = cv2.VideoCapture(0)
+		self.cap = cv2.VideoCapture(0)
 		# self.app.setPollTime(20)
 		# self.app.registerEvent(self.capturaVideo)
 
@@ -108,7 +108,7 @@ class VideoClient(object):
 		self.app.errorBox("err1","El usuario " + user.split()[1] + " ha rechazado la llamada")
 
 	def c_user_busy(self, user):
-		self.app.errorBox("err2", "El usuario " + user.split()[1] + " está ocupado")
+		self.app.errorBox("err2", "El usuario está ocupado")
 
 	def start_call(self, user):
 

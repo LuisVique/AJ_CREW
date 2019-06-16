@@ -34,6 +34,7 @@ class Control_server(object):
                 while 1:
                     client_data = conn.recv(1024).decode('utf-8').split()
                     command, self.CALL_USER, self.u_data.DST_UDP = client_data
+                    print(command)
                     self.u_data.DST_IP = ip_c
                     self.u_data.DST_TCP = self.u_data.DST_UDP
                     func = self.CONTROL_COMMANDS.get(command, lambda: "Invalid command")
@@ -42,23 +43,22 @@ class Control_server(object):
                         break
                     func(self, conn)
             except:
-                print("ERROR")
-                #break
+                continue
 
         s.close()
 
 
     def c_calling(self, connection):
-        if self.BUSSY_FLAG == 0:
+        if self.u_data.BUSSY_FLAG == 0:
             if self.gui.incoming_call(self.CALL_USER) == 'yes' :
                 connection.sendall(("CALL_ACCEPTED " + self.u_data.US_NICK + ' ' + str(self.u_data.UDP_PORT)).encode('utf-8'))
-                self.BUSSY_FLAG = 1
+                self.u_data.BUSSY_FLAG = 1
                 self.u_data.IN_CALL = 1
                 #ACTIVANDO EL FLAG COMIENZA LA LLAMADA
             else:
                 connection.sendall(("CALL_DENIED " + self.u_data.US_NICK ).encode('utf-8'))
         else:
-            connection.sendall(("CALL_BUSSY").encode('utf-8'))
+            connection.sendall(("CALL_BUSY").encode('utf-8'))
 
     def c_hold(self,connection):
         self.u_data.HOLD_CALL = 1
@@ -69,7 +69,7 @@ class Control_server(object):
 
     def c_end(self, connection):
         self.u_data.IN_CALL = 0
-        self.BUSSY_FLAG = 0
+        self.u_data.BUSSY_FLAG = 0
         self.gui.end_call()
 
 

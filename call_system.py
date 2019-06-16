@@ -1,6 +1,7 @@
 import sys
 import socket
 import threading
+import time
 
 class Call_system(object):
     #cerrar ventana de calling
@@ -50,6 +51,7 @@ class Call_system(object):
 
     def udp_video_snd(self):
 
+        #return
         sock2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # Conecta el socket en el puerto cuando el servidor esté escuchando
         server_address = (self.u_data.DST_IP, int(self.u_data.DST_TCP))
@@ -77,5 +79,7 @@ class Call_system(object):
                         sock2.sendall(("CALL_RESUME").encode("utf-8"))
                         break
 
-
+        sock2.sendall(("CALL_END").encode("utf-8"))
+        self.gui.vid_buffer.clear()
+        self.u_data.BUSSY_FLAG = 0
         sock.close()
