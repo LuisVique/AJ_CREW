@@ -33,17 +33,22 @@ class Control_server(object):
             try:
                 while 1:
                     client_data = conn.recv(1024).decode('utf-8').split()
-                    command, self.CALL_USER, self.u_data.DST_UDP = client_data
-                    print(command)
-                    self.u_data.DST_IP = ip_c
-                    self.u_data.DST_TCP = self.u_data.DST_UDP
-                    func = self.CONTROL_COMMANDS.get(command, lambda: "Invalid command")
+                    if client_data:
+                        if client_data[0] == 'CALLING':
+                            command, self.CALL_USER, self.u_data.DST_UDP = client_data
+                        else:
+                            command = client_data[0]
+                        self.u_data.DST_IP = ip_c
+                        self.u_data.DST_TCP = self.u_data.DST_UDP
+                        func = self.CONTROL_COMMANDS.get(command, lambda: "Invalid command")
 
-                    if func == "Invalid command":
+                        if func == "Invalid command":
+                            break
+                        func(self, conn)
+                    else:
                         break
-                    func(self, conn)
-            except:
-                continue
+            finally:
+                conn.close()
 
         s.close()
 

@@ -131,10 +131,10 @@ class VideoClient(object):
 			func = C_USER_STATUS.get(status, lambda: "Invalid status")
 			if func != "Invalid status":
 				func(ret)
+		except:
+		    print('hola')
 
-		finally:
-		    sock.close()
-
+		sock.close()
 
 	# Función que captura el frame a mostrar en cada momento
 	def capturaVideo(self):
